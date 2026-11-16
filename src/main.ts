@@ -16,16 +16,24 @@ async function bootstrap() {
     }),
   );
   app.use(urlencoded({ extended: true, limit: "1mb" }));
-  const origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    process.env.APP_URL,
-    ...(process.env.CORS_ORIGINS ?? "").split(","),
-  ]
-    .map((origin) => origin?.trim().replace(/\/$/, ""))
-    .filter((origin): origin is string => Boolean(origin));
+  const origins = new Set(
+    [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://cutlery-pi.vercel.app",
+      process.env.APP_URL,
+      ...(process.env.CORS_ORIGINS ?? "").split(","),
+    ]
+      .map((origin) => origin?.trim().replace(/\/$/, ""))
+      .filter((origin): origin is string => Boolean(origin)),
+  );
+  // Each Vercel deployment gets a fresh host, such as cutlery-dbhcmy9vc-clotheee.vercel.app.
+  const storefrontDeployment = /^https:\/\/cutlery(?:-[a-z0-9]+)*-clotheee\.vercel\.app$/;
   app.enableCors({
-    origin: [...new Set(origins)],
+    origin: (origin, callback) => {
+      const normalized = origin?.trim().replace(/\/$/, "");
+      callback(null, !normalized || origins.has(normalized) || storefrontDeployment.test(normalized));
+    },
     allowedHeaders: ["content-type", "authorization", "x-customer-token", "x-order-key"],
   });
   // Behind a load balancer or reverse proxy, set TRUST_PROXY (usually 1) so rate limits see each shopper's own IP.
