@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.DS_Store
+
+# Uploaded product photos are stored on the server, not in the repo
+uploads/*
+!uploads/.gitkeep
